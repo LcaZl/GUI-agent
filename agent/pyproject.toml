@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=65.5"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AgentZ"                     # ciò che installerai e importerai
+version = "0.1.0"
+description = "Research agent package"
+requires-python = ">=3.10"
+authors = [{ name = "Luca Zanolo", email = "luca.zanolo@studenti.unitn.it" }]
+dependencies = []                    # tieni le deps in environment.yml o requirements.txt
+
+[tool.setuptools]
+package-dir = {"" = "."}             # radice del codice = cartella corrente
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agentz*"]               # trova agentz e sottopacchetti
+
+[project.scripts]
+# opzionale: un entrypoint CLI
+start-agentz = "agentz.core:main"

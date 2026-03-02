@@ -1,0 +1,34 @@
+name: 
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - python-dotenv
+  # --- scientific stack ---
+  - numpy
+  - pandas
+  - tqdm
+  - tabulate
+  - openpyxl
+  - pyyaml
+  # --- notebooks ---
+  - jupyter
+  - notebook
+  - ipykernel
+  # --- DB / config ---
+  - sqlalchemy
+  - alembic
+  - psycopg2         # su conda usiamo "psycopg2" (non -binary)
+  # --- media / RL ---
+  - imageio
+  - imageio-ffmpeg
+  - ffmpeg
+  # --- AI / LLM ---
+  - openai
+  - tiktoken
+  - pydantic
+  - langchain
+  - langchain-openai
+  - transformers
+  
