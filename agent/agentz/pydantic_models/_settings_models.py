@@ -19,6 +19,10 @@ class MemorySettings(BaseModel):
     root: str = Field(..., description="Folder in which memories are stored")
     initialize_memory: bool = Field(..., description="A new empty memory is created with memory_name")
     memory_name: str = Field(..., description="Name of the memory to be used")
+    enable_tms_trim: bool = Field(
+        default=True,
+        description="If False, disable online short-term memory components based on TMS and TRIM.",
+    )
 
 class PlanExecutorSettings(BaseModel):
     default_pause_sec: float = Field(default=1.0, ge=0.0, description="Default pause applied to env.step() when step parameters do not specify a pause.")

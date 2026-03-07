@@ -540,12 +540,23 @@ class OmniParserLocal:
         inputs = self._move_inputs_to_device(inputs)
 
         with torch.no_grad():
-            ids = self.model.generate(
-                **inputs,
-                max_new_tokens=self.settings.caption_max_new_tokens,
-                num_beams=self.settings.caption_num_beams,
-                use_cache=False,
-            )
+            if self._caption_backend == "florence":
+                ids = self.model.generate(
+                    input_ids=inputs.get("input_ids"),
+                    pixel_values=inputs.get("pixel_values"),
+                    max_new_tokens=self.settings.caption_max_new_tokens,
+                    num_beams=self.settings.caption_num_beams,
+                    use_cache=False,
+                )
+            elif self._caption_backend == "blip2":
+                ids = self.model.generate(
+                    **inputs,
+                    max_new_tokens=self.settings.caption_max_new_tokens,
+                    num_beams=self.settings.caption_num_beams,
+                    use_cache=False,
+                )
+            else:
+                raise ValueError(f"Unknown caption backend: {self._caption_backend}")
 
         texts = self.processor.batch_decode(ids, skip_special_tokens=True)
         for el, txt in zip(cropped_targets, texts):

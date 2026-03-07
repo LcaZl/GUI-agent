@@ -18,7 +18,7 @@ osworld_settings:
   action_space : pyautogui
   socket_timeout_sec: 300
   init_timeout_sec: 360
-  path_to_vm: C:/Users/Luca/Desktop/thesis/OSWorld/vmware_vm_data/Ubuntu0/Ubuntu0.vmx
+  path_to_vm: C:/Users/Luca/Desktop/GUI-agent/OSWorld/vmware_vm_data/Ubuntu0/Ubuntu0.vmx
   snapshot_name : init_state
   headless: true
   require_a11y_tree : true
@@ -32,6 +32,7 @@ memory_settings:
   memory_name : thesis_mem_final_12
   root : ../agent/memories
   initialize_memory : false
+  enable_tms_trim : false
 
 plan_executor_settings:
   default_pause_sec: 1.0

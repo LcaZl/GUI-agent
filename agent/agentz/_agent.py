@@ -70,7 +70,8 @@ class Agent:
             Function result.
         
         """
-        self.memory_manager.close()
+        if getattr(self, "memory_manager", None) is not None:
+            self.memory_manager.close()
 
     @classmethod
     async def create(cls, name: str, settings) -> "Agent":
@@ -133,23 +134,26 @@ class Agent:
         # Initialize history manager for structured interaction logs
         self.history_manager = HistoryManager()
 
-        # Initialize online TMS (Task Memory Structure)
-        self.tms = OnlineTMS(
-            grid=TMS_GRID,
-            max_nodes_in_prompt=TMS_MAX_NODES_IN_PROMPT,
-            max_anchors_per_obs=TMS_MAX_ANCHORS_PER_OBS,
-        )
+        self.tms = None
+        self.trim = None
+        if self.settings.memory_settings.enable_tms_trim:
+            self.tms = OnlineTMS(
+                grid=TMS_GRID,
+                max_nodes_in_prompt=TMS_MAX_NODES_IN_PROMPT,
+                max_anchors_per_obs=TMS_MAX_ANCHORS_PER_OBS,
+            )
 
-        # Initialize TRIM LLM for memory updates
-        self.trim = TRIMLLM(
-            gpt_client=self.tools.gpt_client,
-            grid=TRIM_GRID,
-            max_nodes_in_prompt=TRIM_MAX_NODES_IN_PROMPT,
-            max_anchors_in_prompt=TRIM_MAX_ANCHORS_IN_PROMPT_OVERRIDE,
-        )
+            self.trim = TRIMLLM(
+                gpt_client=self.tools.gpt_client,
+                grid=TRIM_GRID,
+                max_nodes_in_prompt=TRIM_MAX_NODES_IN_PROMPT,
+                max_anchors_in_prompt=TRIM_MAX_ANCHORS_IN_PROMPT_OVERRIDE,
+            )
 
-        # Ensure TMS starts from a clean state
-        self.tms.reset()
+            self.tms.reset()
+            self.logger.info("Short-term memory enabled (TMS/TRIM).")
+        else:
+            self.logger.info("Short-term memory disabled (TMS/TRIM excluded by config).")
 
         # Wait until the environment is fully ready
         await self.env.wait_ready(timeout=float(settings.osworld_settings.init_timeout_sec))
@@ -232,23 +236,26 @@ class Agent:
             # Initialize history manager for structured interaction logs
             self.history_manager = HistoryManager()
 
-            # Initialize online TMS (Task Memory Structure)
-            self.tms = OnlineTMS(
-                grid=TMS_GRID,
-                max_nodes_in_prompt=TMS_MAX_NODES_IN_PROMPT,
-                max_anchors_per_obs=TMS_MAX_ANCHORS_PER_OBS,
-            )
+            self.tms = None
+            self.trim = None
+            if self.settings.memory_settings.enable_tms_trim:
+                self.tms = OnlineTMS(
+                    grid=TMS_GRID,
+                    max_nodes_in_prompt=TMS_MAX_NODES_IN_PROMPT,
+                    max_anchors_per_obs=TMS_MAX_ANCHORS_PER_OBS,
+                )
 
-            # Initialize TRIM LLM for memory updates
-            self.trim = TRIMLLM(
-                gpt_client=self.tools.gpt_client,
-                grid=TRIM_GRID,
-                max_nodes_in_prompt=TRIM_MAX_NODES_IN_PROMPT,
-                max_anchors_in_prompt=TRIM_MAX_ANCHORS_IN_PROMPT_OVERRIDE,
-            )
+                self.trim = TRIMLLM(
+                    gpt_client=self.tools.gpt_client,
+                    grid=TRIM_GRID,
+                    max_nodes_in_prompt=TRIM_MAX_NODES_IN_PROMPT,
+                    max_anchors_in_prompt=TRIM_MAX_ANCHORS_IN_PROMPT_OVERRIDE,
+                )
 
-            # Ensure TMS starts from a clean state
-            self.tms.reset()
+                self.tms.reset()
+                self.logger.info("Task short-term memory enabled (TMS/TRIM).")
+            else:
+                self.logger.info("Task short-term memory disabled (TMS/TRIM excluded by config).")
 
             self._last_task = task
 
@@ -391,24 +398,27 @@ class Agent:
                 # Memory update (TRIM + TMS)
                 # ----------------------------
 
-                self.logger.info("Running TRIM")
-                trim_out = self.trim.run(
-                    task_instruction=task.get("instruction", ""),
-                    tms_nodes=self.tms.nodes(),
-                    history_manager=self.history_manager,
-                    current_observation=self.history_manager.last_observation,
-                    chunk_digest=self.history_manager.last_chunk_digest_for_tms(),
-                    cid=episode.episode_id,
-                )
-                self.history_manager.update(trim_out, tags=["trim_info"])
+                if self.trim is not None and self.tms is not None:
+                    self.logger.info("Running TRIM")
+                    trim_out = self.trim.run(
+                        task_instruction=task.get("instruction", ""),
+                        tms_nodes=self.tms.nodes(),
+                        history_manager=self.history_manager,
+                        current_observation=self.history_manager.last_observation,
+                        chunk_digest=self.history_manager.last_chunk_digest_for_tms(),
+                        cid=episode.episode_id,
+                    )
+                    self.history_manager.update(trim_out, tags=["trim_info"])
 
-                # Apply TRIM output to update TMS
-                self.logger.info("Updating TMS")
-                self.tms.apply_trim_output(
-                    trim_out,
-                    self.history_manager.last_chunk,
-                    self.history_manager.last_observation,
-                )
+                    # Apply TRIM output to update TMS
+                    self.logger.info("Updating TMS")
+                    self.tms.apply_trim_output(
+                        trim_out,
+                        self.history_manager.last_chunk,
+                        self.history_manager.last_observation,
+                    )
+                else:
+                    self.logger.info("Skipping TRIM/TMS update because short-term memory is disabled.")
 
                 self.logger.info("Cycle %d completed\n", cycle + 1)
 
