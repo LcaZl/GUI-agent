@@ -10,7 +10,7 @@ From the repository root:
 python scripts/run_agent_batch.py
 ```
 
-Typical run in your Conda env:
+Typical run in Conda env:
 
 ```bash
 conda run --no-capture-output -n thesis-env python scripts/run_agent_batch.py \
